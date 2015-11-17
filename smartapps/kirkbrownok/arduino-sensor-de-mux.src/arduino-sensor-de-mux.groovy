@@ -24,7 +24,10 @@ definition(
 	category: "Convenience",
 	iconUrl: "https://s3.amazonaws.com/smartapp-icons/Meta/light_outlet.png",
 	iconX2Url: "https://s3.amazonaws.com/smartapp-icons/Meta/light_outlet@2x.png"
-)
+    
+
+) 
+
 
 preferences {
 	section("When this sensor has events: (Arduino or other MUX-ed sensor input)") {
@@ -54,17 +57,31 @@ preferences {
 	section("Event 8 controls this virtual sensor") {
 		input "sensor8", "capability.contactSensor", multiple: false, required: false
 	}
+    section("Use this Simulated Switch for the Fan") {
+    	input "switch1", "capability.switch", multiple: false, required:false
+    }
 }
 
 def installed()
 {   
 	subscribe(master, "contact", contactParser)
+    if(switch1) {
+    	subscribe(switch1, "switch.on", switchOn)
+        subscribe(switch1, "switch.off", switchOff)
+    }
+    
 }
 
 def updated()
 {
 	unsubscribe()
-	subscribe(master, "contact", contactParser)   
+	subscribe(master, "contact", contactParser) 
+    log.debug "Subscribed to ${master}"
+    if(switch1) {
+    	log.debug "Subscribed to ${switch1}"
+    	subscribe(switch1, "switch.on", switchOn)
+        subscribe(switch1, "switch.off", switchOff)
+    }
 }
 
 def logHandler(evt) {
@@ -151,4 +168,15 @@ private offSwitches() {
 	if(switches && offSwitches) { switches + offSwitches }
 	else if(switches) { switches }
 	else { offSwitches }
+}
+
+def switchOn(evt) {
+	log.debug "Switch On"
+    master.onA()
+
+}
+
+def switchOff(evt) {
+	log.debug "Switch Off"
+    master.offA()
 }
