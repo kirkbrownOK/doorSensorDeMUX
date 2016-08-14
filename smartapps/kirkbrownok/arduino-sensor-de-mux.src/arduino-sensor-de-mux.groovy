@@ -15,6 +15,7 @@
  *  Author: Kirk Brown
  *
  *  Date: 2015-10-1
+ 	Date: 2016-4-24 I restored what I had in github. Not sure if all outlets are working correctly.
  */
 definition(
 	name: "Arduino Sensor De-Mux",
@@ -60,15 +61,14 @@ preferences {
     section("Use this Simulated Switch for the Fan") {
     	input "switch1", "capability.switch", multiple: false, required:false
     }
+    section("Use this Simulated Switch for the Orvibo") {
+    	input "switch2", "capability.switch", multiple: false, required:false
+    }
 }
 
 def installed()
 {   
-	subscribe(master, "contact", contactParser)
-    if(switch1) {
-    	subscribe(switch1, "switch.on", switchOn)
-        subscribe(switch1, "switch.off", switchOff)
-    }
+	updated()  
     
 }
 
@@ -82,6 +82,18 @@ def updated()
     	subscribe(switch1, "switch.on", switchOn)
         subscribe(switch1, "switch.off", switchOff)
     }
+    if(switch2) {
+    	state.delay = 5000
+    	log.debug "Subscribed to ${switch2}"
+    	subscribe(switch2, "switchPsu.on", switchOrviboOn)
+        subscribe(switch2, "switchPsu.off", switchOrviboOff)
+        subscribe(switch2, "switchPsu.refresh", switchOrviboRefresh)
+        subscribe(master, "switchOrvibo1.on", masterSlaveOn)
+        subscribe(master, "switchOrvibo1.off", masterSlaveOff)
+        state.updatedLast = now()
+        
+        
+    }    
 }
 
 def logHandler(evt) {
@@ -179,4 +191,89 @@ def switchOn(evt) {
 def switchOff(evt) {
 	log.debug "Switch Off"
     master.offA()
+}
+def switchOrviboOn(evt) {
+	log.debug "Switch On"
+    /*
+    state.now = now()
+    state.diff = state.now - state.updatedLast
+    log.debug "now: ${state.now} last: ${state.updatedLast} diff = ${state.diff}"
+    if( now() - state.updatedLast  < state.delay) {
+    	log.debug "Switch ON ignored because its feedback from arduino state change"
+    	return
+    }
+    master.orviboOn1()
+    state.updatedLast = now()
+    */
+    log.debug "EVT: name: ${evt.name} value: ${evt.value} descriptionText: ${evt.descriptionText}"
+    if (evt.descriptionText == "Arduino"){
+    	log.debug "DT is Arduino"
+    } else {
+    	log.debug "DT is not Arduino"
+    	master.orviboOn1()
+    }
+    
+
+}
+
+def switchOrviboOff(evt) {
+	log.debug "Switch Off"
+    /*
+    state.now = now()
+    state.diff = state.now - state.updatedLast
+    log.debug "now: ${state.now} last: ${state.updatedLast} diff = ${state.diff}"
+        if( now() - state.updatedLast < state.delay) {
+        
+    	log.debug "Switch Off ignored because its feedback from arduino state change. Now: $now() and ${state.updatedLast} "
+    	
+        return
+    }
+    master.orviboOff1()
+    state.updatedLast = now()
+    */
+    log.debug "EVT: name: ${evt.name} value: ${evt.value} descriptionText: ${evt.descriptionText}"
+    if (evt.descriptionText == "Arduino"){
+    	log.debug "DT is Arduino"
+    } else {
+    	log.debug "DT is not Arduino"
+    	master.orviboOff1()
+    }
+}
+def switchOrviboRefresh(evt) {
+	log.debug "Refresh Orvibo"
+
+    master.orviboRefresh1()
+
+}
+def masterSlaveOn(evt) {
+	log.debug "Arduino turning on switch device"
+    switch2.arduinoOn()
+    /*
+    state.now = now()
+    state.diff = state.now - state.updatedLast
+    log.debug "now: ${state.now} last: ${state.updatedLast} diff = ${state.diff}"   
+    if( now() - state.updatedLast  < state.delay) {
+    return
+    }
+    state.updatedLast = now()
+    switch2.on()
+    */
+    
+}
+def masterSlaveOff(evt) {
+	/*
+    state.now = now()
+    state.diff = state.now - state.updatedLast
+    log.debug "now: ${state.now} last: ${state.updatedLast} diff = ${state.diff}"
+	if( now() - state.updatedLast < state.delay) {
+    
+    return
+    }
+    
+	log.debug "Arduino turning off switch device"
+    state.updatedLast = now()
+    switch2.off()
+    */
+    
+    switch2.arduinoOff()
 }
