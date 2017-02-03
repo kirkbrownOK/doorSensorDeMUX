@@ -61,6 +61,9 @@ preferences {
     section("Use this Simulated Switch for the Fan") {
     	input "switch1", "capability.switch", multiple: false, required:false
     }
+    section("Use this Simulated Switch for the Westinghouse Outlet") {
+    	input "switch3", "capability.switch", multiple: false, required:false
+    }
     section("Use this Simulated Switch for the Orvibo") {
     	input "switch2", "capability.switch", multiple: false, required:false
     }
@@ -71,16 +74,29 @@ def installed()
 	updated()  
     
 }
-
+def scheduleJob() {
+	def sec = Math.round(Math.floor(Math.random() * 60))
+	def cron = "$sec 0/5 * 1/1 * ?"
+    log.debug "chron: ${cron}"
+	schedule(cron, "tenMinuteSync")
+}
 def updated()
 {
 	unsubscribe()
+    unschedule()
+    scheduleJob()
 	subscribe(master, "contact", contactParser) 
     log.debug "Subscribed to ${master}"
+    state.lastDB = 'close'
     if(switch1) {
     	log.debug "Subscribed to ${switch1}"
     	subscribe(switch1, "switch.on", switchOn)
         subscribe(switch1, "switch.off", switchOff)
+    }
+    if(switch3) {
+    	log.debug "Subscribed to ${switch3}"
+    	subscribe(switch3, "switch.on", switchWestOn)
+        subscribe(switch3, "switch.off", switchWestOff)
     }
     if(switch2) {
     	state.delay = 5000
@@ -90,9 +106,7 @@ def updated()
         subscribe(switch2, "switchPsu.refresh", switchOrviboRefresh)
         subscribe(master, "switchOrvibo1.on", masterSlaveOn)
         subscribe(master, "switchOrvibo1.off", masterSlaveOff)
-        state.updatedLast = now()
-        
-        
+        state.updatedLast = now()       
     }    
 }
 
@@ -157,8 +171,11 @@ def contactParser(evt) {
     } else if (calledSensor == 'Sensor8' && sensor8) {
     	log.debug "Sensor8: calling $cmd"
     	if(cmd == 'open') {
+        	state.lastDB = 'open'
         	sensor8.open()
+
         } else if (cmd == 'close') {
+        	state.lastDB = 'close'
         	sensor8.close()
         }        
     } else {
@@ -191,6 +208,16 @@ def switchOn(evt) {
 def switchOff(evt) {
 	log.debug "Switch Off"
     master.offA()
+}
+def switchWestOn(evt) {
+	log.debug "Switch Westing On"
+    master.onW()
+
+}
+
+def switchWestOff(evt) {
+	log.debug "Switch Westing Off"
+    master.offW()
 }
 def switchOrviboOn(evt) {
 	log.debug "Switch On"
@@ -276,4 +303,101 @@ def masterSlaveOff(evt) {
     */
     
     switch2.arduinoOff()
+}
+def tenMinuteSync(evt) {
+	log.debug "Sync Events"
+    
+    //log.debug "m.contact1State is ${master.contact1State} current is ${master.currentContact1}"
+ if(sensor1){
+       if (master.currentContact1 != sensor1.currentContact) {
+            def calledSensor = master.currentContact1
+            if (calledSensor  == "closed") {
+                sensor1.close()
+            } else {
+                sensor1.open()
+            }
+            log.debug "Sensor1: correcting to $calledSensor"       
+        }
+    }
+    if(sensor2) {
+        if (master.currentContact2 != sensor2.currentContact) {
+            def calledSensor = master.currentContact2
+            log.debug "s.cC= ${sensor2.currentContact} m.cC2= ${master.currentContact2} cs = ${calledSensor}"
+            if (calledSensor  == "closed") {
+                sensor2.close()
+            } else {
+                sensor2.open()
+            }
+            log.debug "Sensor2: correcting to ${calledSensor}"        
+        }
+    }
+    if(sensor3) {
+        if (master.currentContact3 != sensor3.currentContact) {
+            def calledSensor = master.currentContact3
+            if (calledSensor  == "closed") {
+                sensor3.close()
+            } else {
+                sensor3.open()
+            }
+            log.debug "Sensor3: correcting to ${calledSensor}"       
+        } 
+    }
+    if(sensor4) {
+        if (master.currentContact4 != sensor4.currentContact) {
+            def calledSensor = master.currentContact4
+            if (calledSensor  == "closed") {
+                sensor4.close()
+            } else {
+                sensor4.open()
+            }
+            log.debug "Sensor4: correcting to ${calledSensor}"       
+        } 
+    }
+    if(sensor5) {
+        if (master.currentContact5 != sensor5.currentContact) {
+            def calledSensor = master.currentContact5
+            if (calledSensor  == "closed") {
+                sensor5.close()
+            } else {
+                sensor5.open()
+            }
+            log.debug "Sensor5: correcting to ${calledSensor}"       
+        } 
+    }
+    if(sensor6) {
+        if (master.currentContact6 != sensor6.currentContact) {
+            def calledSensor = master.currentContact6
+            if (calledSensor  == "closed") {
+                sensor6.close()
+            } else {
+                sensor6.open()
+            }
+            log.debug "Sensor6: correcting to ${calledSensor}"       
+        }
+	}
+    if(sensor7) {
+        if (master.currentContact7 != sensor7.currentContact) {
+            def calledSensor = master.currentContact7
+            if (calledSensor  == "closed") {
+                sensor7.close()
+            } else {
+                sensor7.open()
+            }
+            log.debug "Sensor7: correcting to ${calledSensor}"       
+        } 
+    }
+    if(sensor8) {
+        if (master.currentContact8 != sensor8.currentContact) {
+            def calledSensor = master.currentContact8
+            if (calledSensor  == "closed") {
+                sensor8.close()
+                state.lastDB = 'close'
+            } else if (state.lastDB =='close') {
+                sensor8.open()
+                state.lastDB = 'open'
+            }
+            log.debug "Sensor8: correcting to ${calledSensor}"       
+        } 
+    }
+    
 }
